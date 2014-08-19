@@ -32,8 +32,35 @@
 *
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
 jQuery.fn.extend({
+	carga_combos:function(options){
+		var contenedor_combo = jQuery(this);
+		contenedor_combo.children("#dia").html("");
+		contenedor_combo.children("#mes").html("");
+		contenedor_combo.children("#anio").html("");
+		var html_tmp="";
+		/*carga los dias*/
+		for(i=1; i<=31;i++)
+		{
+			html_tmp+='<option value="'+((i<10)?"0"+i:i)+'"  >'+((i<10)?"0"+i:i)+'</option>';
+		}
+		contenedor_combo.children("#dia").html(html_tmp);
+		
+		html_tmp="";
+		for(i=1; i<=12;i++)
+		{
+			html_tmp+='<option value="'+((i<10)?"0"+i:i)+'"  >'+((i<10)?"0"+i:i)+'</option>';
+		}
+		contenedor_combo.children("#mes").html(html_tmp);
+
+		html_tmp="";
+		var fechaHOY = new Date();
+		html_tmp+='<option value="'+(fechaHOY.getFullYear())+'"  >'+(fechaHOY.getFullYear())+'</option>';
+		html_tmp+='<option value="'+(fechaHOY.getFullYear()+1)+'"  >'+(fechaHOY.getFullYear()+1)+'</option>';
+
+		contenedor_combo.children("#anio").html(html_tmp );
+
+	},
 	SetFecha:function(options){
 		var un_dia=1000*60*60*24;
 		var comboDia = jQuery(this).children("#dia");
@@ -50,15 +77,32 @@ jQuery.fn.extend({
 			dias_festivos : "_",   /*ingresar por pares dia/mes en numeros separado por coma ejemplo para 4 de enero  04/01  */
 			adelantar_dia : 0,
 			bloquear_dias_pasados:false,
-			mensaje_bloqueo_dias_pasados:"",
-			bloquear_Domingo: false,
-			bloquear_Sabado: false,
+			msj_bloqueo_dias_pasados:"No puede seleccionar dias previos a la fecha actual",
+			msj_bloqueo_dias_festivos:"No puede seleccionar un dia festivo",
+			msj_bloqueo_domingos:"No puede seleccionar dia domingo",
+			msj_bloqueo_sabados:"No puede seleccionar dia sabado",
+			bloquear_domingo: false,
+			bloquear_sabado: false,
 			bloquear_feriados: false
 		};
 		var options = $.extend({},defaults,options);
 		
-		
-		comboDia.val( options.num_dia + options.adelantar_dia);
+		fechaHOY.setDate( options.num_dia+options.adelantar_dia);
+		options.num_dia=( parseInt(fechaHOY.getDate() )< 10  )? "0"+(parseInt( fechaHOY.getDate() )) : parseInt(  fechaHOY.getDate()  );
+		options.num_mes= ( parseInt(fechaHOY.getMonth() )< 10  )? "0"+(parseInt( fechaHOY.getMonth() )+1) : parseInt(  fechaHOY.getMonth()  )+1;
+		options.num_anio= fechaHOY.getFullYear();
+
+		if( dias[fechaHOY.getDay]=="Domingo" )
+		{
+			fechaHOY.setDate( options.num_dia+1);
+			options.num_dia= ( parseInt(fechaHOY.getDate() )< 10  )? "0"+(parseInt( fechaHOY.getDate() )) : parseInt(  fechaHOY.getDate()  );
+			options.num_mes= ( parseInt(fechaHOY.getMonth() )< 10  )? "0"+(parseInt( fechaHOY.getMonth() )+1) : parseInt(  fechaHOY.getMonth()  )+1;
+			options.num_anio= fechaHOY.getFullYear();
+
+		}
+
+
+		comboDia.val( options.num_dia);
 		comboMes.val( options.num_mes);
 		comboAnio.val( options.num_anio);
 
@@ -70,41 +114,42 @@ jQuery.fn.extend({
 			
 			if(fechaSel.getMonth()!= (parseInt(comboMes.val())-1) || fechaSel.getDate() != parseInt(comboDia.val() ) )
 			{
-				alert("Ha ocurrido un error inesperado. Favor seleccione nuevamente la fecha.")
-				comboDia.val( options.num_dia + options.adelantar_dia);
+				alert("Ha ocurrido un error inesperado. Seleccione nuevamente la fecha.")
+				comboDia.val( options.num_dia);
 				comboMes.val( options.num_mes);
 				comboAnio.val( options.num_anio);
 				return	false;
 			}
 			else 
 			{
-				if( Math.ceil( fechaSel.getTime()/un_dia) <  Math.ceil(fechaHOY.getTime()/un_dia)  && options.bloquear_dias_pasado==true)
+				alert(  Math.ceil( fechaSel.getTime()/un_dia)+" <  "+Math.ceil(fechaHOY.getTime()/un_dia) );
+				if( (Math.ceil( fechaSel.getTime()/un_dia) <  Math.ceil(fechaHOY.getTime()/un_dia))  && options.bloquear_dias_pasados==true)
 				{
-					alert(options.mensaje_bloqueo_dias_pasados);
+					alert(options.msj_bloqueo_dias_pasados);
 					flag=true;
 				}
 				var fecha_corta=  comboDia.val()+"/"+comboMes.val()
 				/*Busca si es un dia feriado y si la funcion permite bloquear esos dias*/
 				if(  options.dias_festivos.indexOf(fecha_corta)>0  && options.bloquear_feriados==true )
 				{
-					alert("No realizamos entregas en dias festivos, "+ "\n" +"Selecciones otra fecha");
+					alert(options.msj_bloqueo_dias_festivos);
 					flag=true
 				}
 				/*Busca si es un dia Domingo y si la funcion permite bloquear los Domingos*/
-				if( dias[fechaSel.getDay()]=="Domingo" && options.bloquear_Domingo )
+				if( dias[fechaSel.getDay()]=="Domingo" && options.bloquear_domingo )
 				{
-					alert("No realizan entregas en >>Domingos<< "+ "\n" +"Selecciones otra fecha");
+					alert(options.msj_bloqueo_domingos);
 					flag=true
 				}
 				/*Busca si es un dia Sabado y si la funcion permite bloquear los Sabados*/
-				if( dias[fechaSel.getDay()]=="Sabado" && options.bloquear_Sabado )
+				if( dias[fechaSel.getDay()]=="Sabado" && options.bloquear_sabado )
 				{
-					alert("No realizamos entregas en >>Sabados<< "+ "\n" +"Selecciones otra fecha");
+					alert(option.msj_bloqueo_sabados);
 					flag=true
 				}
 				if(flag==true)
 				{
-				  	comboDia.val( options.num_dia + options.adelantar_dia);
+				  	comboDia.val( options.num_dia);
 					comboMes.val( options.num_mes);
 					comboAnio.val( options.num_anio);
 				}
